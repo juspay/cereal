@@ -26,6 +26,7 @@ executable cereal-bench
                      , criterion
                      , binary     >= 0.5
                      , text
+                     , aeson
                      , unordered-containers
                      , vector
                      , hashable

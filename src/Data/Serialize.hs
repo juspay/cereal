@@ -72,6 +72,9 @@ import qualified Data.ByteString.Lazy  as L
 import qualified Data.ByteString.Short as S
 import qualified Data.Map              as Map
 import qualified Data.HashMap.Strict   as HashMap
+import qualified Data.Aeson            as A
+import qualified Data.Aeson.Key        as AK
+import qualified Data.Aeson.KeyMap     as KM
 import qualified Data.Monoid           as M
 import qualified Data.Set              as Set
 import qualified Data.IntMap           as IntMap
@@ -732,9 +735,19 @@ instance Serialize Text where
     len <- fromEnum <$> getWord32be
     Enc.decodeUtf8 <$> getBytes len
 
+instance Serialize AK.Key where
+  put k = put $ AK.toText k 
+  get = do
+    len <- fromEnum <$> getWord32be
+    AK.fromText . Enc.decodeUtf8 <$> getBytes len
+  
 instance (Eq k, Hashable k, Serialize k, Serialize e) => Serialize (HashMap.HashMap k e) where
   put = putHashMapOf put put
   get = getHashMapOf get get
+
+instance (Serialize A.Key, Serialize e) => Serialize (KM.KeyMap e) where
+  put = putKeyMapOf put put
+  get = getKeyMapOf get get
 
 instance Serialize a => Serialize (Vector a) where
   put =  putVectorOf put

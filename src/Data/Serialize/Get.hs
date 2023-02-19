@@ -94,6 +94,7 @@ module Data.Serialize.Get (
     , getMapOf
     , getIntMapOf
     , getHashMapOf
+    , getKeyMapOf
     , getSetOf
     , getIntSetOf
     , getMaybeOf
@@ -122,6 +123,8 @@ import qualified Data.ByteString.Lazy     as L
 import qualified Data.ByteString.Short    as BS
 import qualified Data.IntMap              as IntMap
 import qualified Data.HashMap.Strict      as HashMap
+import qualified Data.Aeson               as A
+import qualified Data.Aeson.KeyMap        as AK
 import qualified Data.IntSet              as IntSet
 import qualified Data.Map                 as Map
 import qualified Data.Sequence            as Seq
@@ -827,6 +830,10 @@ getIntMapOf i m = IntMap.fromList `fmap` getListOf (getTwoOf i m)
 -- | Read as a list of pairs of key and element.
 getHashMapOf :: Eq k => Hashable k => Get k -> Get a -> Get (HashMap.HashMap k a)
 getHashMapOf k m = HashMap.fromList `fmap` getListOf (getTwoOf k m)
+
+-- | Read as a list of pairs of key and element.
+getKeyMapOf :: Get A.Key -> Get a -> Get (AK.KeyMap a)
+getKeyMapOf k m = AK.fromList `fmap` getListOf (getTwoOf k m)
 
 -- | Read as a list of elements.
 getSetOf :: Ord a => Get a -> Get (Set.Set a)

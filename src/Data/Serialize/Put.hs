@@ -84,6 +84,7 @@ module Data.Serialize.Put (
     , putMapOf
     , putIntMapOf
     , putHashMapOf
+    , putKeyMapOf
     , putSetOf
     , putIntSetOf
     , putMaybeOf
@@ -111,6 +112,8 @@ import qualified Data.ByteString        as S
 import qualified Data.ByteString.Lazy   as L
 import qualified Data.IntMap            as IntMap
 import qualified Data.HashMap.Strict    as HashMap
+import qualified Data.Aeson             as A
+import qualified Data.Aeson.KeyMap      as KM
 import qualified Data.IntSet            as IntSet
 import qualified Data.Map               as Map
 import qualified Data.Sequence          as Seq
@@ -447,6 +450,10 @@ putIntMapOf pix pa = putListOf (putTwoOf pix pa) . IntMap.toAscList
 putHashMapOf :: Putter k -> Putter a -> Putter (HashMap.HashMap k a)
 putHashMapOf pk pa = putListOf (putTwoOf pk pa) . HashMap.toList
 {-# INLINE putHashMapOf #-}
+
+putKeyMapOf :: Putter A.Key -> Putter a -> Putter (KM.KeyMap a)
+putKeyMapOf pk pa = putListOf (putTwoOf pk pa) . KM.toList
+{-# INLINE putKeyMapOf #-}
 
 putSetOf :: Putter a -> Putter (Set.Set a)
 putSetOf pa = putListOf pa . Set.toAscList
