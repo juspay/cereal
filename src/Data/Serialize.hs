@@ -32,8 +32,8 @@ module Data.Serialize (
     -- $example
 
     -- * Serialize serialisation
-    , encodeWithVersion, encodeLazyWithVersion
-    , decodeWithVersion, decodeLazyWithVersion
+    , encode, encodeLazy
+    , decode, decodeLazy
     , expect
     , module Data.Serialize.Get
     , module Data.Serialize.Put
@@ -131,47 +131,6 @@ decode = runGet get
 -- structure.
 decodeLazy :: Serialize a => L.ByteString -> Either String a
 decodeLazy  = runGetLazy get
-
-currentMajorVersion :: Word8
-currentMajorVersion = 1
-
-currentMinorVersion :: Word8
-currentMinorVersion = 0
-
-
--- | Encode a value using binary serialization to a strict ByteString along with version of the Cereal lib used
-encodeWithVersion :: Serialize a => a -> ByteString
-encodeWithVersion = runPut . putWithVersion
-
--- | Encode a value using binary serialization to a lazy ByteString along with version of the Cereal lib used
-encodeLazyWithVersion :: Serialize a => a -> L.ByteString
-encodeLazyWithVersion = runPutLazy . putWithVersion
-
-{-# INLINE putWithVersion #-}
-putWithVersion :: Serialize a => a -> Put
-putWithVersion val = do
-    putWord8 currentMajorVersion
-    putWord8 currentMinorVersion
-    put val
-
--- | Decode a value from a strict ByteString, reconstructing the original
--- structure. This can handle decoding of bytestring encoded with previous versions
-decodeWithVersion :: Serialize a => ByteString -> Either String a
-decodeWithVersion = runGet getWithVersion 
-
--- | Decode a value from a lazy ByteString, reconstructing the original
--- structure. This can handle decoding of bytestring encoded with previous versions
-decodeLazyWithVersion :: Serialize a => L.ByteString -> Either String a
-decodeLazyWithVersion = runGetLazy getWithVersion
-
-{-# INLINE getWithVersion #-}
-getWithVersion :: Serialize a => Get a
-getWithVersion  = do 
-    major <- getWord8
-    minor <- getWord8
-    if major==currentMajorVersion && minor==currentMinorVersion
-        then get
-        else fail "Version not supported"
 
 ------------------------------------------------------------------------
 -- Combinators
