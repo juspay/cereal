@@ -20,6 +20,9 @@ import qualified Data.ByteString        as S
 import           Data.Maybe (fromMaybe, isJust, mapMaybe)
 import           Data.List (isSuffixOf)
 
+requiredSuffix :: String
+requiredSuffix = "Temp"
+
 makeCerealCustom :: Name -> Name -> Q [Dec]
 makeCerealCustom name hv = makeCerealInternal (Just hv) name
 
@@ -37,7 +40,7 @@ makeCerealInternal higherKindType name = do
                  , datatypeVars -- Not supported yet
                  , datatypeCons
                  } -> do
-      newDatatypeName <- getNameSuffixRemoved' datatypeName "Temp"
+      newDatatypeName <- getNameSuffixRemoved' datatypeName requiredSuffix
       let
         constrNameStr constructor =
           case (constructorName constructor) of
@@ -54,7 +57,7 @@ makeCerealInternal higherKindType name = do
             qSpecificConstructorGetsBindingsAndNames =
               for datatypeCons $ \constructor@(ConstructorInfo { constructorName, constructorFields }) ->
                 do
-                  newConstructorName <- getNameSuffixRemoved constructorName "Temp"
+                  newConstructorName <- getNameSuffixRemoved constructorName requiredSuffix
                   let
                     constrName = nameBase newConstructorName
                   name <- newName $ "get_" <> constrName
@@ -101,7 +104,7 @@ makeCerealInternal higherKindType name = do
               valD (varP 'get) body declrs
           in getBody
         getBodyForConstructor (ConstructorInfo { constructorName, constructorFields }) = do
-          newConstructorName <- getNameSuffixRemoved constructorName "Temp"
+          newConstructorName <- getNameSuffixRemoved constructorName requiredSuffix
           attrBindingNames <-
             replicateM (length constructorFields) (newName "attr")
           let fields =  filter (\(_,ty,_) -> notDeprecated ty) $ zipWith3 (\ty tagNum attrBindingName -> (attrBindingName,ty,tagNum)) constructorFields ([0..] :: [Int]) attrBindingNames
@@ -113,7 +116,7 @@ makeCerealInternal higherKindType name = do
             doBlockBody = bindings <> [returnStmt]
           normalB $ doE doBlockBody
         putClause datatypeCon@(ConstructorInfo { constructorName, constructorVariant, constructorFields }) = do
-          newConstructorName <- getNameSuffixRemoved constructorName "Temp"
+          newConstructorName <- getNameSuffixRemoved constructorName requiredSuffix
           attrBindingNames <-
             replicateM (length constructorFields) (newName "attr")
           let fields =  filter (\(_,ty,_) -> notDeprecated ty) $ zipWith3 (\ty tagNum attrBindingName -> (attrBindingName,ty,tagNum)) constructorFields [0..] attrBindingNames
