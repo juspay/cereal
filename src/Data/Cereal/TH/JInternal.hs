@@ -21,7 +21,7 @@ import           Data.Maybe (fromMaybe, isJust, mapMaybe)
 import           Data.List (isSuffixOf)
 
 requiredSuffix :: String
-requiredSuffix = "Temp"
+requiredSuffix = "TH"
 
 makeCerealCustom :: Name -> Name -> Q [Dec]
 makeCerealCustom name hv = makeCerealInternal (Just hv) name
@@ -149,10 +149,16 @@ makeCerealInternal higherKindType name = do
         instanceD (pure []) (pure instanceType) (funcDecl)
 
 isMaybeType :: Type -> Bool
-isMaybeType (AppT (ConT con) _) = nameBase con == "Maybe"
+isMaybeType (AppT ty ((AppT (ConT con) _))) = (nameBase con == "Maybe") || (case ty of
+                                                                              ConT con2 ->  nameBase con2 == "Maybe"
+                                                                              _         ->  False)
+isMaybeType (AppT (ConT con) _) =  (nameBase con == "Maybe")
 isMaybeType _ = False
 
 notDeprecated :: Type -> Bool
+notDeprecated (AppT ty ((AppT (ConT con) _))) = (not (nameBase con == "Deprecated")) && (case ty of
+                                                                                          ConT con2 ->  not (nameBase con2 == "Deprecated")
+                                                                                          _         ->  True)
 notDeprecated (AppT (ConT con) _) = not (nameBase con == "Deprecated")
 notDeprecated _ = True
 
