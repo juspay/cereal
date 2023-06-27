@@ -45,6 +45,7 @@ library
                                 unordered-containers,
                                 hashable,
                                 scientific,
+                                th-utilities >=0.2,
                                 time,
                                 vector
 
@@ -60,12 +61,14 @@ library
 
         hs-source-dirs:         src
 
-        exposed-modules:        Data.Cereal.TH,
+        exposed-modules:        Data.Cereal.TH.JInternal,
                                 Data.Cereal.Instances,
                                 Data.Serialize,
                                 Data.Serialize.Put,
                                 Data.Serialize.Get,
                                 Data.Serialize.IEEE754
+        
+        other-modules:          Data.Cereal.TH
 
         ghc-options:            -Wall -O2 -funbox-strict-fields
 

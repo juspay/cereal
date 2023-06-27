@@ -100,6 +100,8 @@ module Data.Serialize.Get (
     , getMaybeOf'
     , getEitherOf
     , getNested
+    , getNestedWithTagNum
+    , getNestedWithTagNumMaybe
   ) where
 
 import qualified Control.Applicative as A
@@ -873,6 +875,42 @@ getNested :: Get Int -> Get a -> Get a
 getNested getLen getVal = do
     n <- getLen
     isolate n getVal
+
+{-# INLINE getNestedWithTagNum #-}
+getNestedWithTagNum :: Word32 -> Get a -> Get a
+getNestedWithTagNum tagNum getVal = do
+  currentTag <- getWord32be
+  size <- fromEnum <$> getWord32be 
+  if tagNum == currentTag
+    then do
+      isolate size getVal
+    else if tagNum > currentTag
+      then do
+        skip size
+        getNestedWithTagNum tagNum getVal
+    else fail "Required tag number doesn't exists"
+
+{-# INLINE getNestedWithTagNumMaybe #-}
+getNestedWithTagNumMaybe :: Word32 -> Get a -> Get (Maybe a)
+getNestedWithTagNumMaybe tagNum getVal = do
+  eob <- isEmpty
+  if eob
+     then return Nothing
+     else do 
+        s <- get
+        pre <- bytesRead
+        currentTag <- getWord32be
+        size <- fromEnum <$> getWord32be 
+        if tagNum == currentTag
+          then do
+            Just <$> isolate size getVal
+          else if tagNum > currentTag
+            then do
+              skip size
+              getNestedWithTagNumMaybe tagNum getVal
+          else do
+            put s pre -- put the point back
+            return Nothing 
 
 -- | Get the number of bytes read up to this point
 bytesRead :: Get Int
