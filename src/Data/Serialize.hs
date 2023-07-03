@@ -132,6 +132,8 @@ decode = runGet get
 decodeLazy :: Serialize a => L.ByteString -> Either String a
 decodeLazy  = runGetLazy get
 
+-- TODO: Add versioning support for encodes and decodes
+
 ------------------------------------------------------------------------
 -- Combinators
 
