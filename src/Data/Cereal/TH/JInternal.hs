@@ -1,6 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE LambdaCase #-}
 module Data.Cereal.TH.JInternal where
 
 import Data.Serialize
@@ -40,7 +41,7 @@ makeCerealInternal higherKindType name = do
                  , datatypeVars -- Not supported yet
                  , datatypeCons
                  } -> do
-      newDatatypeName <- getNameSuffixRemoved' datatypeName requiredSuffix
+      newDatatypeName <- getNameSuffixRemoved' Nothing datatypeName requiredSuffix
       let
         constrNameStr constructor =
           case (constructorName constructor) of
@@ -55,9 +56,9 @@ makeCerealInternal higherKindType name = do
           let
             qSpecificConstructorGetsBindingsAndNames :: Q [(Dec, Name, String)]
             qSpecificConstructorGetsBindingsAndNames =
-              for datatypeCons $ \constructor@(ConstructorInfo { constructorName, constructorFields }) ->
+              for datatypeCons $ \constructor@(ConstructorInfo { constructorName, constructorVariant, constructorFields }) ->
                 do
-                  newConstructorName <- getNameSuffixRemoved constructorName requiredSuffix
+                  newConstructorName <- getNameSuffixRemoved (Just constructorVariant) constructorName requiredSuffix
                   let
                     constrName = nameBase newConstructorName
                   name <- newName $ "get_" <> constrName
@@ -103,8 +104,8 @@ makeCerealInternal higherKindType name = do
                 declrs = specificConstructorGetsBindingsAndNames <&> (\(d, _, _) -> pure d)
               valD (varP 'get) body declrs
           in getBody
-        getBodyForConstructor (ConstructorInfo { constructorName, constructorFields }) = do
-          newConstructorName <- getNameSuffixRemoved constructorName requiredSuffix
+        getBodyForConstructor (ConstructorInfo { constructorName, constructorVariant, constructorFields }) = do
+          newConstructorName <- getNameSuffixRemoved (Just constructorVariant) constructorName requiredSuffix
           attrBindingNames <-
             replicateM (length constructorFields) (newName "attr")
           let fields =  filter (\(_,ty,_) -> notDeprecated ty) $ zipWith3 (\ty tagNum attrBindingName -> (attrBindingName,ty,tagNum)) constructorFields ([0..] :: [Int]) attrBindingNames
@@ -116,7 +117,7 @@ makeCerealInternal higherKindType name = do
             doBlockBody = bindings <> [returnStmt]
           normalB $ doE doBlockBody
         putClause datatypeCon@(ConstructorInfo { constructorName, constructorVariant, constructorFields }) = do
-          newConstructorName <- getNameSuffixRemoved constructorName requiredSuffix
+          newConstructorName <- getNameSuffixRemoved (Just constructorVariant) constructorName requiredSuffix
           attrBindingNames <-
             replicateM (length constructorFields) (newName "attr")
           let fields =  filter (\(_,ty,_) -> notDeprecated ty) $ zipWith3 (\ty tagNum attrBindingName -> (attrBindingName,ty,tagNum)) constructorFields [0..] attrBindingNames
@@ -175,12 +176,26 @@ putNestedWithTagNumMaybe :: Serialize a => Word32 -> Maybe a -> Put
 putNestedWithTagNumMaybe tagNum (Just val) = putNestedWithTagNum tagNum (put val)
 putNestedWithTagNumMaybe _ Nothing = putByteString (S.empty)  
 
-getNameSuffixRemoved :: Name -> String -> Q Name
-getNameSuffixRemoved name suffix
-    | let dtName = nameBase name, isSuffixOf suffix dtName = fromMaybe name <$> lookupValueName (take (length dtName - length suffix) dtName)
-    | otherwise = return $ name
+getNameSuffixRemoved :: Maybe ConstructorVariant -> Name -> String -> Q Name
+getNameSuffixRemoved consVar name suffix
+  | let dtName = nameBase name, isSuffixOf suffix dtName = let lookupName = (take (length dtName - length suffix) dtName) 
+      in lookupValueName lookupName >>= \case
+        Just name'  -> return name'
+        _           -> case consVar of
+                        (Just (RecordConstructor _)) -> fail $ "Unable to look up data type " ++ lookupName ++ ". Possible solution is to make data type with suffix " ++ requiredSuffix ++ " removed."
+                        _                            -> return $ name
+  | otherwise = case consVar of 
+                  (Just (RecordConstructor _)) -> fail $ requiredSuffix ++ " suffix not found for RecordConstructor Variant"
+                  _                            -> return $ name
 
-getNameSuffixRemoved' :: Name -> String -> Q Name
-getNameSuffixRemoved' name suffix
-    | let dtName = nameBase name, isSuffixOf suffix dtName = fromMaybe name <$> lookupTypeName (take (length dtName - length suffix) dtName)
-    | otherwise = return $ name
+getNameSuffixRemoved' :: Maybe ConstructorVariant -> Name -> String -> Q Name
+getNameSuffixRemoved' consVar name suffix
+  | let dtName = nameBase name, isSuffixOf suffix dtName = let lookupName = (take (length dtName - length suffix) dtName) 
+      in lookupTypeName lookupName >>= \case
+        Just name'  -> return name'
+        _           -> case consVar of
+                        (Just (RecordConstructor _)) -> fail $ "Unable to look up data type " ++ lookupName ++ ". Possible solution is to make data type with suffix " ++ requiredSuffix ++ " removed."
+                        _                            -> return $ name
+  | otherwise = case consVar of 
+                  (Just (RecordConstructor _)) -> fail $ requiredSuffix ++ " suffix not found for RecordConstructor Variant"
+                  _                            -> return $ name
