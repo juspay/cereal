@@ -199,3 +199,20 @@ getNameSuffixRemoved' consVar name suffix
   | otherwise = case consVar of 
                   (Just (RecordConstructor _)) -> fail $ requiredSuffix ++ " suffix not found for RecordConstructor Variant"
                   _                            -> return $ name
+
+makeDataTypeDeriving :: Name -> [String] -> Q [Dec]
+makeDataTypeDeriving name dcs = do
+    info <- reify name
+    case info of
+       TyConI (DataD ctx dtName tyVBs mkind ((RecC recName varBangTypes):[]) _) -> do 
+           dtName'  <- removeSuffix dtName requiredSuffix
+           recName' <- removeSuffix recName requiredSuffix
+           return $ (DataD ctx dtName' tyVBs mkind ((RecC recName' (removeDeprecated varBangTypes)):[]) [DerivClause Nothing (map (ConT . mkName) dcs)]):[]
+       _                                                -> return []
+    where 
+        removeDeprecated varBangTypes = [(nm,bg,ty) | (nm,bg,ty) <- varBangTypes, notDeprecated ty]
+
+removeSuffix :: Name -> String -> Q Name
+removeSuffix name1 suffix
+    | let nameStr = nameBase name1, isSuffixOf suffix nameStr = return $ mkName $ take (length nameStr - length suffix) nameStr
+    | otherwise = fail $ requiredSuffix ++ " suffix is not present on the type or constructer"
