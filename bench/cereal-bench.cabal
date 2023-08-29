@@ -19,6 +19,7 @@ executable cereal-bench
   main-is:           Benchmark.hs
   hs-source-dirs:    src .
   build-depends:     base
+                     , aeson
                      , cereal
                      , containers >= 0.5
                      , array      >= 0.3
