@@ -94,6 +94,7 @@ module Data.Serialize.Get (
     , getMapOf
     , getIntMapOf
     , getHashMapOf
+    , getKeyMapOf
     , getSetOf
     , getIntSetOf
     , getMaybeOf
@@ -101,6 +102,9 @@ module Data.Serialize.Get (
     , getEitherOf
     , getNested
   ) where
+
+import qualified Data.Aeson.KeyMap as AKM
+import qualified Data.Aeson.Key as AKey
 
 import qualified Control.Applicative as A
 import qualified Control.Monad as M
@@ -827,6 +831,10 @@ getIntMapOf i m = IntMap.fromList `fmap` getListOf (getTwoOf i m)
 -- | Read as a list of pairs of key and element.
 getHashMapOf :: Eq k => Hashable k => Get k -> Get a -> Get (HashMap.HashMap k a)
 getHashMapOf k m = HashMap.fromList `fmap` getListOf (getTwoOf k m)
+
+-- | Read as a list of pairs of key and element.
+getKeyMapOf :: Get AKey.Key -> Get v -> Get (AKM.KeyMap v)
+getKeyMapOf k m = AKM.fromList `fmap` getListOf (getTwoOf k m)
 
 -- | Read as a list of elements.
 getSetOf :: Ord a => Get a -> Get (Set.Set a)
