@@ -23,6 +23,7 @@ import Test.QuickCheck as QC
 import Data.Time
 import qualified Data.Aeson as A
 import qualified Data.HashMap.Strict as HM
+import qualified Data.Aeson.KeyMap as AKM
 import Data.Cereal.Instances ()
 
 import Test.Framework (Test(),testGroup)
@@ -72,7 +73,7 @@ tests  = testGroup "Round Trip"
   , testProperty "Value with String Round Trip "
     $ roundTrip put get (A.String "abc")
   , testProperty "Value with Object Round Trip "
-    $ roundTrip put get (A.Object $ HM.insert "abc" (A.String "abc") HM.empty)
+    $ roundTrip put get (A.Object $ AKM.insert "abc" (A.String "abc") AKM.empty)
   ]
 
 timeTests :: LocalTime -> UTCTime -> Test
