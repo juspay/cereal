@@ -80,6 +80,8 @@ import qualified Data.Ratio            as R
 import qualified Data.Tree             as T
 import qualified Data.Sequence         as Seq
 
+import qualified Data.Aeson.KeyMap     as AKM
+import qualified Data.Aeson.Key        as AKey
 import GHC.Generics
 
 #if !(MIN_VERSION_base(4,8,0))
@@ -777,3 +779,11 @@ instance Serialize UTCTime where
     day <- get
     d <- get
     pure $ UTCTime (ModifiedJulianDay day) (picosecondsToDiffTime d)
+
+instance (Serialize v) => Serialize (AKM.KeyMap v) where
+    put = putKeyMapOf put put
+    get = getKeyMapOf get get
+
+instance Serialize AKey.Key where
+  put = put . AKey.toText
+  get = AKey.fromText <$> get
