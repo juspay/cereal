@@ -34,7 +34,6 @@ module Data.Serialize (
     -- * Serialize serialisation
     , encode, encodeLazy
     , decode, decodeLazy
-
     , expect
     , module Data.Serialize.Get
     , module Data.Serialize.Put
@@ -135,6 +134,7 @@ decode = runGet get
 decodeLazy :: Serialize a => L.ByteString -> Either String a
 decodeLazy  = runGetLazy get
 
+-- TODO: Add versioning support for encodes and decodes
 
 ------------------------------------------------------------------------
 -- Combinators
