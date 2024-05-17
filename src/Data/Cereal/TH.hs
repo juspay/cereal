@@ -14,7 +14,7 @@ import Data.Foldable
 import Data.Traversable
 import Control.Monad
 import Data.Functor
-import Data.Text (Text)
+import Data.Text (Text, unpack)
 
 makeCerealCustom :: Name -> Name -> Q [Dec]
 makeCerealCustom name hv = makeCerealInternal (Just hv) name
@@ -76,12 +76,12 @@ makeCerealInternal higherKindType name = do
                           (infixE
                             (Just (litE (stringL "Unexpected Tag: ")))
                             (varE '(<>))
-                            (Just (appE (varE 'show) (varE xName))))
+                            (Just (appE (varE 'unpack) (varE xName))))
                           (varE '(<>))
                           (infixE
                             (Just (litE (stringL " for type: ")))
                             (varE '(<>))
-                            (Just (appE (varE 'show) (litE (stringL $ nameBase name)))))
+                            (Just (appE (varE 'unpack) (litE (stringL $ nameBase name)))))
                         )
                       )
                     ) []
